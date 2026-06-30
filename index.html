@@ -19,6 +19,7 @@
     --gold:#ffd166;
     --cream:#fffaf5;
     --white:#ffffff;
+    --angry-red:#ff5a5a;
   }
 
   *{ box-sizing:border-box; margin:0; padding:0; }
@@ -33,6 +34,37 @@
     font-family:'Quicksand', sans-serif;
   }
 
+  /* ================= DATE WATERMARK (full page background) ================= */
+  .date-bg{
+    position:fixed;
+    inset:0;
+    z-index:1;
+    overflow:hidden;
+    pointer-events:none;
+  }
+  .date-bg-inner{
+    position:absolute;
+    top:-30%; left:-30%;
+    width:160%; height:160%;
+    display:flex;
+    flex-wrap:wrap;
+    align-content:flex-start;
+    justify-content:flex-start;
+    gap:22px 34px;
+    transform:rotate(-11deg);
+  }
+  .date-bg-inner span{
+    font-family:'Quicksand', sans-serif;
+    font-weight:700;
+    font-size:16px;
+    letter-spacing:1.5px;
+    color:var(--pink-200);
+    opacity:0.55;
+    white-space:nowrap;
+    user-select:none;
+  }
+  .date-bg-inner span.bg-icon{ font-size:15px; opacity:0.45; }
+
   /* ================= LOCK SCREEN ================= */
   .lock-screen{
     position:fixed;
@@ -42,13 +74,23 @@
     align-items:center;
     justify-content:center;
     padding:20px;
-    background:
-      radial-gradient(circle at 25% 20%, var(--pink-100) 0%, transparent 50%),
-      radial-gradient(circle at 80% 85%, var(--pink-200) 0%, transparent 55%),
-      linear-gradient(160deg, var(--pink-50), var(--cream) 60%, var(--pink-50));
     transition:opacity .55s ease;
   }
   .lock-screen.unlocking{ opacity:0; pointer-events:none; }
+
+  .lock-screen.angry::after{
+    content:'';
+    position:fixed;
+    inset:0;
+    background:rgba(255,90,90,0.16);
+    animation:screenFlash .55s ease;
+    pointer-events:none;
+  }
+  @keyframes screenFlash{
+    0%{ opacity:0; }
+    35%{ opacity:1; }
+    100%{ opacity:0; }
+  }
 
   .lock-card{
     width:100%;
@@ -59,23 +101,51 @@
     text-align:center;
     box-shadow:0 20px 50px rgba(239,82,136,0.22);
   }
-  .lock-card.shake{ animation:shake .5s; }
-  @keyframes shake{
-    10%,90%{ transform:translateX(-2px); }
-    20%,80%{ transform:translateX(5px); }
-    30%,50%,70%{ transform:translateX(-9px); }
-    40%,60%{ transform:translateX(9px); }
+  .lock-card.angry{
+    animation:angryShake .55s ease, angryFlash .55s ease;
+  }
+  @keyframes angryShake{
+    10%,90%{ transform:translateX(-3px) rotate(-1deg); }
+    20%,80%{ transform:translateX(6px) rotate(1deg); }
+    30%,50%,70%{ transform:translateX(-13px) rotate(-2.5deg); }
+    40%,60%{ transform:translateX(13px) rotate(2.5deg); }
+  }
+  @keyframes angryFlash{
+    0%{ background:var(--white); }
+    30%{ background:#ffe1e1; }
+    100%{ background:var(--white); }
   }
 
+  .lock-icon-wrap{
+    position:relative;
+    display:inline-block;
+    margin-bottom:10px;
+  }
   .lock-icon{
     font-size:42px;
     line-height:1;
-    margin-bottom:10px;
+    display:inline-block;
     animation:lockPulse 2.4s ease-in-out infinite;
   }
   @keyframes lockPulse{
     0%,100%{ transform:scale(1); }
     50%{ transform:scale(1.08); }
+  }
+  .burst{
+    position:absolute;
+    top:-4px;
+    font-size:18px;
+    opacity:0;
+    transform:scale(0.4);
+  }
+  .burst-left{ left:-24px; }
+  .burst-right{ right:-24px; }
+  .lock-card.angry .burst{ animation:burstPop .6s ease; }
+  @keyframes burstPop{
+    0%{ opacity:0; transform:scale(0.3) rotate(0deg); }
+    35%{ opacity:1; transform:scale(1.2) rotate(-10deg); }
+    70%{ opacity:1; transform:scale(1) rotate(8deg); }
+    100%{ opacity:0; transform:scale(0.8) rotate(0deg); }
   }
 
   .lock-title{
@@ -129,7 +199,7 @@
   .lock-error{
     margin-top:14px;
     font-size:13px;
-    font-weight:600;
+    font-weight:700;
     color:#e2456c;
     opacity:0;
     visibility:hidden;
@@ -142,7 +212,7 @@
   @keyframes fadeIn{ from{ opacity:0; } to{ opacity:1; } }
 
   /* ================= MAIN CONTENT ================= */
-  #content{ display:none; }
+  #content{ display:none; position:relative; z-index:2; }
 
   .stage{
     position:relative;
@@ -447,9 +517,17 @@
 </head>
 <body>
 
+<div class="date-bg" aria-hidden="true">
+  <div class="date-bg-inner" id="dateBgInner"></div>
+</div>
+
 <div class="lock-screen" id="lockScreen">
   <div class="lock-card" id="lockCard">
-    <div class="lock-icon">🔒</div>
+    <div class="lock-icon-wrap">
+      <span class="burst burst-left" aria-hidden="true">💢</span>
+      <div class="lock-icon" id="lockIcon">🔒</div>
+      <span class="burst burst-right" aria-hidden="true">💢</span>
+    </div>
     <h2 class="lock-title">A Surprise for Saadia</h2>
     <p class="lock-sub">Enter the secret word to open it 💗</p>
     <form id="lockForm" autocomplete="off">
@@ -465,7 +543,7 @@
       >
       <button type="submit" class="lock-btn">Unlock 💌</button>
     </form>
-    <p class="lock-error" id="lockError">Oops, that's not it — try again 💔</p>
+    <p class="lock-error" id="lockError">😡 Wrong password — try again!</p>
   </div>
 </div>
 
@@ -532,15 +610,36 @@
 </div>
 
 <script>
+  // ---------- date watermark background ----------
+  (function fillDateBg() {
+    const wrap = document.getElementById('dateBgInner');
+    const label = 'JANUARY 4TH';
+    const total = 150;
+    const frag = document.createDocumentFragment();
+    for (let i = 0; i < total; i++) {
+      const s = document.createElement('span');
+      if (i % 5 === 4) {
+        s.textContent = '🎂';
+        s.className = 'bg-icon';
+      } else {
+        s.textContent = label;
+      }
+      frag.appendChild(s);
+    }
+    wrap.appendChild(frag);
+  })();
+
   // ---------- lock screen logic ----------
   const PASSWORD = 'pakhi';
   const lockScreen = document.getElementById('lockScreen');
   const lockCard = document.getElementById('lockCard');
+  const lockIcon = document.getElementById('lockIcon');
   const lockForm = document.getElementById('lockForm');
   const lockInput = document.getElementById('lockInput');
   const lockError = document.getElementById('lockError');
   const content = document.getElementById('content');
   const stage = document.getElementById('stage');
+  let angryTimer = null;
 
   window.addEventListener('load', () => { lockInput.focus(); });
 
@@ -549,7 +648,10 @@
     const entered = lockInput.value.trim().toLowerCase();
 
     if (entered === PASSWORD) {
+      clearTimeout(angryTimer);
       lockError.classList.remove('show');
+      lockScreen.classList.remove('angry');
+      lockCard.classList.remove('angry');
       lockScreen.classList.add('unlocking');
       setTimeout(() => {
         lockScreen.style.display = 'none';
@@ -558,11 +660,23 @@
       }, 550);
     } else {
       lockError.classList.add('show');
-      lockCard.classList.remove('shake');
-      void lockCard.offsetWidth; // force reflow so the shake can replay
-      lockCard.classList.add('shake');
+      lockIcon.textContent = '😡';
+
+      lockScreen.classList.remove('angry');
+      lockCard.classList.remove('angry');
+      void lockCard.offsetWidth; // force reflow so the animations can replay
+      lockScreen.classList.add('angry');
+      lockCard.classList.add('angry');
+
       lockInput.value = '';
       lockInput.focus();
+
+      clearTimeout(angryTimer);
+      angryTimer = setTimeout(() => {
+        lockIcon.textContent = '🔒';
+        lockScreen.classList.remove('angry');
+        lockCard.classList.remove('angry');
+      }, 900);
     }
   });
 
